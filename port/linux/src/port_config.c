@@ -284,8 +284,6 @@ static const struct config_setting config_settings[] =
 		"A folder to write each shader the game draws with to, as GLSL named by its\n"
 		"hash (the names gpu_capture logs); the folder must exist. Empty for none." },
 #endif
-		"Columns of the 480-line picture: 0 for the display's shape, 640 for the\n"
-		"Xbox's 4:3." },
 	/* read by the Android host (port/android/host/host_vk_driver.c) */
 	{ "display.vk_driver", _config_string, "\"\"", "HALO_VK_DRIVER", _environment_value, _platform_android,
 		"The Vulkan driver the Vulkan renderer runs on: empty for the phone's own;\n"
@@ -1009,8 +1007,6 @@ static const struct config_setting config_settings[] =
 		"and log where it differs from the game's bytes (port/switch/host/host_dk.c).\n"
 		"Slow: it waits for the GPU each time. Takes effect the next start." },
 #endif
-		"Log where every game thread is this often, in seconds (read by the\n"
-		"app, port/android/host/host_debug.c); 0 never." },
 	{ "debug.vk_present_marker", _config_boolean, "false", "HALO_VK_PRESENT_MARKER", _environment_set_is_true, _platform_android,
 		"Under the Vulkan renderer, draw a red square at the top left and a green one\n"
 		"at the top right of the picture, so that a screenshot shows which way up it is." },
