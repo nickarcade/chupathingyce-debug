@@ -579,7 +579,7 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     # (the overlay's fonts are plain C, drawn in the guest with the overlay:
     # stb_truetype; the fonts, tools/embed_assets.py --fonts)
     guest_posix = {"posix_ui_font.c": f"-I{STB_DIR}"}
-    gl_renderer_object = gl_textures_object = gl_post_object = None
+    gl_renderer_object = gl_textures_object = gl_post_object = gl_shader_cache_object = None
     for source in sorted((LINUX_DIR / "src").glob("*.c")):
         if source.name in guest_posix:
             objects.append(guest_object(source, f"{platform_cflags} {guest_posix[source.name]}"))
@@ -601,6 +601,8 @@ def generate_android_build(n: Writer, sln: Any) -> None:
             gl_post_object = objects[-1]
         if source.name == "xbox_textures.c":
             gl_textures_object = objects[-1]
+        if source.name == "xgpu_shader_cache.c":
+            gl_shader_cache_object = objects[-1]
     # the high-res HUD's textures (port/assets/hud; port/linux/src/hud_hires.c)
     for source in (hud_assets_build(n, "android", gen_dir / "hud_hires_assets.c")
                    + ui_fonts_build(n, "android", gen_dir / "ui_fonts.c", sln)):
@@ -678,13 +680,13 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     # object is shared. The host runs one image or the other, as config.toml's
     # display.renderer says (port/android/host/host_main.c).
     # (its texture cache, xbox_textures_vk.c, takes the place of xbox_textures.c the same way)
-    vk_objects = [obj for obj in objects if obj not in (gl_renderer_object, gl_textures_object, gl_post_object)]
+    vk_objects = [obj for obj in objects if obj not in (gl_renderer_object, gl_textures_object, gl_post_object, gl_shader_cache_object)]
     vk_objects.append(guest_object(PORT_DIR / "guest" / "xbox_textures_vk.c", platform_cflags))
     vk_objects.append(guest_object(PORT_DIR / "guest" / "d3d8_vk.c", platform_cflags))
     # the generators for glslang: the originals stay in both images
     vk_objects.append(guest_object(PORT_DIR / "guest" / "nv2a_vsh_vk.c", platform_cflags))
     vk_objects.append(guest_object(PORT_DIR / "guest" / "nv2a_psh_vk.c", platform_cflags))
-    n.build(outputs=vk_image, rule="android_guest_link", inputs=vk_objects, implicit=[libguestc, linker_script])
+    n.build(outputs=vk_image, rule="android_guest_link", inputs=[*vk_objects, *ffmpeg_archives], implicit=[libguestc, linker_script])
 
     # ---------- SDL3
 
