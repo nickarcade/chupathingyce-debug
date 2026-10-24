@@ -81,4 +81,10 @@ void dk_hud_prepare(const long *assets, long count);
 void dk_hud_forget(void);
 #endif
 
+#ifdef HALO_ANDROID
+/* the Vulkan renderer's: an 8-bit RGBA PNG's pixels (malloc'd, red first,
+rows top down) and size; NULL if it could not be decoded */
+unsigned char *hud_hires_png_pixels(const void *png, unsigned long size, unsigned long *width, unsigned long *height);
+#endif
+
 #endif
