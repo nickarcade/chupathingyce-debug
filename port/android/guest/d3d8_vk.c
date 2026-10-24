@@ -2918,3 +2918,14 @@ HRESULT WINAPI D3DDevice_PersistDisplay(void)
 {
 	return S_OK;
 }
+
+void halo_draw_picture(const unsigned char *rgba, long width, long height)
+{
+	(void)rgba;
+	(void)width;
+	(void)height;
+}
+
+void halo_test_screenshot(void)
+{
+}
