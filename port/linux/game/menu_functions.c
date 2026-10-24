@@ -1527,6 +1527,31 @@ static void video_rows_show(struct widget_instance *list)
 	}
 }
 
+/* Video Setup's Vulkan Driver (Android's: tools/port_settings.py), shown
+while the backend shown is Vulkan; the list passes over it while it is
+hidden, and the focus on it goes to the backend's row */
+static void vk_driver_row_show(struct widget_instance *list)
+{
+	struct widget_instance *renderer = named(list, "renderer_spinner", 0);
+	struct widget_instance *renderer_row = named(list, "op_renderer", 0);
+	struct widget_instance *driver_row = named(list, "op_vk_driver", 0);
+	struct pc_menu_setting *setting = renderer ? pc_menu_setting_get(renderer->definition_tag_index) : NULL;
+	struct widget_instance *child;
+	short index;
+
+	if (!setting || !renderer_row || !driver_row)
+		return;
+	index = renderer->parameters.list.selected_index;
+	driver_row->visible = index >= 0 && index < setting->value_count && !strcmp(setting->values[index], "vulkan");
+	if (!driver_row->visible && list->focused_child == driver_row)
+	{
+		for (index = 0, child = list->child; child && child != renderer_row; child = child->next)
+			index++;
+		list->focused_child = renderer_row;
+		list->parameters.list.selected_index = index;
+	}
+}
+
 /* ---------- the settings screens' nested lists (tools/port_settings.py's
 VIEWS): a row of a list (op_link_<view>) opens another list in the same
 screen, and B goes back out of it. Each list's rows follow a mark, an empty

@@ -1602,7 +1602,7 @@ static char *gl_vertex_shader(const struct vertex_shader_object *program, unsign
 	char *text;
 
 	xgpu_capabilities.shading_language = "310 es";
-	text = nv2a_vertex_shader_to_glsl(program->instructions, program->instruction_count, mask);
+	text = nv2a_vertex_shader_to_glsl(program->instructions, program->instruction_count, mask, NULL);
 	xgpu_capabilities.shading_language = saved;
 	return text;
 }
