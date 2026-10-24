@@ -135,6 +135,7 @@ add_console_arguments(parser)
 for port in console_ports:
     if hasattr(port.module, "add_arguments"):
         port.module.add_arguments(parser.add_argument_group(f"{port.name} ({port.root})"))
+parser.add_argument(
     "--android-vulkan-validation",
     action="store_true",
     help="put the Vulkan validation layer in the Android APK (debug.vk_validation; adds about 30 MB)",
