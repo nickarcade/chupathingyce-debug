@@ -216,7 +216,7 @@ void host_gl_read_buffer(uint32_t buffer, uint32_t offset, uint32_t size, void *
 	const void *mapping;
 
 	if (host_renderer_vulkan)
-		return 0;
+		return;
 	glBindBuffer(GL_COPY_READ_BUFFER, buffer);
 	mapping = glMapBufferRange(GL_COPY_READ_BUFFER, offset, size, GL_MAP_READ_BIT);
 	if (mapping)
