@@ -49,9 +49,10 @@ SCREENS = {
         # (rows in the place of the row before them: Window Size in
         # Resolution's, port/linux/game/menu_functions.c showing the one the
         # display mode chosen uses; Android's resolution and anti-aliasing in
-        # the desktop's)
+        # the desktop's; Android's backend and Vulkan driver in Display Mode's
+        # and Resolution Scaling's)
         "same_place": ["display.window_size", "resolution_android", "display.interpolation",
-                       "anti_aliasing_android"],
+                       "anti_aliasing_android", "display.renderer", "display.vk_driver"],
         # (rows written but placed on no page: Smooth Motion, which Frame
         # Rate sets on every platform, kept so the rows after it keep their
         # strings)
@@ -61,6 +62,11 @@ SCREENS = {
              [("FULLSCREEN", "fullscreen"), ("BORDERLESS", "borderless"), ("WINDOWED", "windowed")],
              "Fullscreen, borderless or a window. F11 switches.",
              "desktop"),
+            # (read by the Android app as the game starts, which loads the game
+            # image built with that renderer: port/android/host/host_main.c)
+            ("GRAPHICS BACKEND:", "display.renderer", [("VULKAN", "vulkan"), ("OPENGL", "gl")],
+             "How the game draws: Vulkan, or OpenGL ES. Takes\neffect the next time the game starts.",
+             "android"),
             # (port/linux/game/menu_tags.c adds the display's resolutions)
             ("RESOLUTION:", "display.resolution", [("NATIVE", "native")],
              "The resolution for fullscreen and borderless.",
@@ -77,6 +83,12 @@ SCREENS = {
              "android", "resolution_android"),
             ("RESOLUTION SCALING:", "display.resolution_scaling", [("NATIVE", "native"), ("ORIGINAL", "original")],
              "Native draws at full resolution. Original draws at\n640x480 and scales it up.", "desktop"),
+            # (port/linux/game/menu_functions.c shows it while the backend
+            # shown is Vulkan; a driver archive's name left there by hand is
+            # kept unless another is chosen: port/android/host/host_vk_driver.c)
+            ("VULKAN DRIVER:", "display.vk_driver", [("STOCK", ""), ("TURNIP", "auto")],
+             "The phone's own driver, or Turnip on an Adreno\nGPU. Takes effect the next time the game starts.",
+             "android"),
             ("V-SYNC:", "display.vsync", ON_OFF,
              "Sync frames to the display.", NOT_CONSOLE),
             # (port/linux/game/menu_functions.c: 30 also turns display.interpolation
@@ -320,10 +332,18 @@ def _screen(folder: str, spec: dict, rows: list, list_inputs: list, list_handler
                       ("bitmap", "bitmaps/gradient")],
                      [*_back_handlers(spec),
                       f'<child{attributes([("widget", f"{base}/{header}")])}/>',
-                      f'<child{attributes([("widget", f"{base}/options_menu")])}/>'])
+                      f'<child{attributes([("widget", f"{base}/options_menu")])}/>',
+                      *[f'<child{attributes([("widget", f"{base}/note_{index}"), ("x", 54), ("y", 73 + place * spec["spacing"]), ("platform", platform)])}/>'
+                        for index, (_, platform, place) in enumerate(spec.get("notes", []))]])
     lines += _widget(f"{base}/{header}", [("controller", 1), ("left", 35), ("top", 11), ("width", 605), ("height", 59),
                                           ("bitmap", header_bitmap)], [])
     # (a help of its own text, set by its screen's function: help_text)
+    # (a note is text alone, which the focus never lands on)
+    for index, (text, platform, _) in enumerate(spec.get("notes", [])):
+        lines += _widget(f"{base}/note_{index}", [("type", "text"), ("width", 512), ("height", 24), ("text", text),
+                                                  ("font", "ui\\small_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                                                  ("text_y", 5), ("text_flags", "no_focus_test"),
+                                                  ("platform", platform)], [])
     lines += _widget(f"{base}/help", [("type", "text"), ("controller", 1), ("left", 68),
                                       ("top", spec.get("help_top", 350)), ("width", 482), ("height", 60),
                                       ("string_list", None if spec.get("help_text") else f"{base}/help_strings"),
