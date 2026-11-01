@@ -325,8 +325,8 @@ uint32_t host_sdl_open_gamepad(uint32_t id)
 		char guid[64];
 		char const *serial = SDL_GetGamepadSerial(gamepad);
 		char const *path = SDL_GetGamepadPath(gamepad);
-		bool has_rumble = SDL_GamepadHasRumble(gamepad);
-		bool has_triggers = SDL_GamepadHasRumbleTriggers(gamepad);
+		bool has_rumble = SDL_GetBooleanProperty(SDL_GetGamepadProperties(gamepad), SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
+		bool has_triggers = SDL_GetBooleanProperty(SDL_GetGamepadProperties(gamepad), SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN, false);
 
 		/* (the serial, path and GUID tell two pads of the same model apart,
 		which share a name) */
