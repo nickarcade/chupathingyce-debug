@@ -369,9 +369,9 @@ static void extent_check(void)
 /* ---------- the UI overlay */
 
 #define OVERLAY_ATLAS_SIZE 2048
-#define OVERLAY_ICON_SIZE 64
+#define OVERLAY_ICON_SIZE 128
 #define OVERLAY_ICON_LAYERS 10
-#define OVERLAY_ICON_LEVELS 7
+#define OVERLAY_ICON_LEVELS 8
 
 static struct
 {
