@@ -1552,6 +1552,10 @@ void host_vk_submit(uint32_t commands, uint32_t size)
 			if (header->size >= sizeof(struct vk_command_visibility_end))
 				host_vk_visibility_end((const struct vk_command_visibility_end *)header);
 			break;
+		case VK_COMMAND_OVERLAY:
+			if (header->size >= sizeof(struct vk_command_overlay))
+				host_vk_overlay_command((const struct vk_command_overlay *)header);
+			break;
 		case VK_COMMAND_TEST_DRAW:
 			if (header->size >= sizeof(struct vk_command_test_draw))
 				command_test_draw((const struct vk_command_test_draw *)header);

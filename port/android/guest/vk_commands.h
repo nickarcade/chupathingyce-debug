@@ -39,6 +39,7 @@ enum
 	VK_COMMAND_COMPOSITE,
 	VK_COMMAND_VISIBILITY_BEGIN,
 	VK_COMMAND_VISIBILITY_END,
+	VK_COMMAND_OVERLAY,
 };
 
 /* a surface's kind, as the host makes its image */
@@ -329,6 +330,30 @@ struct vk_command_texture_free
 {
 	struct vk_command_header header;
 	uint32_t id;
+};
+
+/* the UI overlay (ui_overlay.c): drawn over the swapchain image after the
+back buffer is blitted into it at Present */
+struct vk_command_overlay
+{
+	struct vk_command_header header;
+	struct vk_data_ref vertices;
+	uint32_t vertex_count;
+	uint32_t vertex_bytes;
+	struct vk_data_ref atlas;
+	uint32_t atlas_size;
+	uint32_t dirty_top;
+	uint32_t dirty_rows;
+	struct vk_data_ref icons;
+	uint32_t icon_size;
+	uint32_t icon_count;
+	struct vk_data_ref picture;
+	uint32_t picture_width;
+	uint32_t picture_height;
+	uint32_t picture_serial;
+	float cutouts[4][4];
+	uint32_t window_width;
+	uint32_t window_height;
 };
 
 #endif

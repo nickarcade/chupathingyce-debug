@@ -131,9 +131,9 @@ static struct
 	float last_scale;
 
 	struct vertex vertices[MAXIMUM_QUADS * 6];
-#ifdef HALO_BGFX
-	/* (the bgfx backend: the atlas's texels here, the rows changed since it
-	last had them, and the icons premultiplied; d3d8_bgfx.inl draws) */
+#if defined(HALO_BGFX) || defined(HALO_ANDROID)
+	/* (the bgfx / Vulkan backend: the atlas's texels here, the rows changed
+	since it last had them, and the icons premultiplied) */
 	unsigned char *atlas_texels, *icon_texels;
 	int dirty_top, dirty_bottom;
 #endif
@@ -852,7 +852,7 @@ static int set_up(void)
 
 	if (overlay.ready || overlay.failed)
 		return overlay.ready;
-#ifdef HALO_BGFX
+#if defined(HALO_BGFX) || defined(HALO_ANDROID)
 	if (xgpu_bgfx)
 	{
 		int size = ui_prompt_icon_size, icon, texel;
@@ -1056,7 +1056,7 @@ static struct glyph *glyph(int font, int pixel_size, unsigned int codepoint, int
 	entry->advance = posix_ui_font_advance(font, (float)pixel_size, codepoint, 0);
 	entry->atlas_x = (short)overlay.shelf_x;
 	entry->atlas_y = (short)overlay.shelf_y;
-#ifdef HALO_BGFX
+#if defined(HALO_BGFX) || defined(HALO_ANDROID)
 	if (xgpu_bgfx && bitmap && width > 0 && height > 0)
 	{
 		int row;
@@ -1174,7 +1174,7 @@ static void put_vertex(struct vertex *vertex, float x, float y, float u, float v
 	vertex->color[3] = (unsigned char)color;
 }
 
-#ifdef HALO_BGFX
+#if defined(HALO_BGFX) || defined(HALO_ANDROID)
 /* the quads as triangles in window pixels, each layer's shapes, then its
 text, then the next layer's (shape_count of them shapes, the rest glyphs);
 how many vertices */
@@ -1290,7 +1290,7 @@ void ui_overlay_present(int x, int y, int width, int height, int window_width, i
 	/* the picture's top left, in window pixels from the window's top */
 	origin_x = (float)x + ((float)width - LAYOUT_WIDTH * scale) * 0.5f;
 	origin_y = (float)(window_height - (y + height));
-#ifdef HALO_BGFX
+#if defined(HALO_BGFX) || defined(HALO_ANDROID)
 	if (xgpu_bgfx)
 	{
 		/* (the bgfx backend draws: d3d8_bgfx.inl) */

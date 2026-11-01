@@ -318,5 +318,6 @@ uint32_t host_vk_present_record(VkCommandBuffer command, struct host_vk_target *
 /* after the frame was submitted: presents the image acquired by host_vk_present_record */
 void host_vk_present_queue(uint32_t image_index);
 void host_vk_present_destroy(void);
+void host_vk_overlay_command(const struct vk_command_overlay *command);
 
 #endif

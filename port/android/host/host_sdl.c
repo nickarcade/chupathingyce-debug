@@ -259,6 +259,28 @@ int host_sdl_poll_event(void *event)
 
 	if (!SDL_PollEvent(&host_event))
 		return 0;
+	if (host_event.type == SDL_EVENT_MOUSE_MOTION)
+	{
+		SDL_Window *window = SDL_GetWindowFromID(host_event.motion.windowID);
+		float density = window ? SDL_GetWindowPixelDensity(window) : 1.0f;
+
+		if (density > 0.0f && density != 1.0f)
+		{
+			host_event.motion.x *= density;
+			host_event.motion.y *= density;
+		}
+	}
+	else if (host_event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || host_event.type == SDL_EVENT_MOUSE_BUTTON_UP)
+	{
+		SDL_Window *window = SDL_GetWindowFromID(host_event.button.windowID);
+		float density = window ? SDL_GetWindowPixelDensity(window) : 1.0f;
+
+		if (density > 0.0f && density != 1.0f)
+		{
+			host_event.button.x *= density;
+			host_event.button.y *= density;
+		}
+	}
 	/* the layouts agree except for the pointers of text, drop and user
 	events, which the guest does not read */
 	memcpy(event, &host_event, sizeof(host_event));

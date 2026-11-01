@@ -27,6 +27,8 @@ host's Vulkan backend (port/android/host/host_vk.c).
 #include "halo_port_window.h"
 #include "sdl_platform.h"
 #include "halo_ui_pointer.h"
+#include "ui_point.h"
+#include "ui_overlay.h"
 #include "port_config.h"
 #include "vk_commands.h"
 #include "vk_shaders.h"
@@ -46,6 +48,7 @@ void d3d8_surface_resize(D3DSurface *surface, D3DFORMAT format, unsigned long wi
 /* what the context supports: xbox_textures.c reads it (as d3d8_gl.c
 defines it on Android); nothing here is OpenGL, so nothing is supported */
 struct xgpu_capabilities xgpu_capabilities;
+BOOL xgpu_bgfx = TRUE;
 
 /* ---------- the screen's width
 
@@ -888,11 +891,61 @@ HRESULT WINAPI Direct3D_CreateDevice(UINT adapter, D3DDEVTYPE device_type, void 
 
 /* ---------- the menus' pointer */
 
+static BOOL ui_point_view_get(struct ui_point_view *view)
+{
+	struct vk_surface back_buffer;
+	float scale[2];
+
+	if (!device.video_ready)
+		return FALSE;
+	surface_describe(&device.back_buffer, FALSE, &back_buffer, scale);
+	if (back_buffer.kind == VK_SURFACE_NONE)
+		return FALSE;
+	platform_video_window_size(&view->window_width, &view->window_height);
+	platform_video_drawable_size(&view->pixel_width, &view->pixel_height);
+	view->target_width = (int)back_buffer.width;
+	view->target_height = (int)back_buffer.height;
+	view->gl_width = (int)back_buffer.pixel_width;
+	view->gl_height = (int)back_buffer.pixel_height;
+	view->screen_width = halo_screen_width();
+	return TRUE;
+}
+
+static void ui_point_from_window_now(float window_x, float window_y, short *x, short *y)
+{
+	struct ui_point_view view;
+
+	*x = *y = -1;
+	if (ui_point_view_get(&view))
+		ui_point_from_window(&view, window_x, window_y, x, y);
+}
+
+BOOL halo_ui_point_to_window(short x, short y, float *window_x, float *window_y)
+{
+	struct ui_point_view view;
+
+	return ui_point_view_get(&view) && ui_point_to_window(&view, x, y, window_x, window_y);
+}
+
 int halo_ui_pointer_update(int menus_active, struct halo_ui_pointer *pointer)
 {
-	(void)pointer;
+	struct platform_ui_pointer state;
+
 	platform_menus_set_active(menus_active != 0);
-	return 0;
+	platform_ui_pointer_set_active(menus_active != 0);
+	if (!menus_active || !device.video_ready || !platform_ui_pointer_read(&state))
+		return 0;
+	memset(pointer, 0, sizeof(*pointer));
+	ui_point_from_window_now(state.x, state.y, &pointer->x, &pointer->y);
+	ui_point_from_window_now(state.click_x, state.click_y, &pointer->click_x, &pointer->click_y);
+	pointer->moved = state.moved != FALSE;
+	pointer->left_clicks = (unsigned char)(state.left_clicks < 255 ? state.left_clicks : 255);
+	pointer->right_clicks = (unsigned char)(state.right_clicks < 255 ? state.right_clicks : 255);
+	pointer->wheel_steps = (signed char)(state.wheel_steps < -8 ? -8 : state.wheel_steps > 8 ? 8 : state.wheel_steps);
+	pointer->touch = state.touch != FALSE;
+	pointer->downs = (unsigned char)(state.downs < 255 ? state.downs : 255);
+	ui_point_from_window_now(state.down_x, state.down_y, &pointer->down_x, &pointer->down_y);
+	return 1;
 }
 
 /* takes up the display's shape and resolution, or the window's, if they
@@ -2874,6 +2927,59 @@ void WINAPI D3DDevice_Clear(DWORD count, CONST D3DRECT *rectangles, DWORD flags,
 
 /* ---------- presentation */
 
+static BOOL overlay_icons_sent;
+static int overlay_picture_serial;
+
+void xgpu_bgfx_overlay_draw(const void *vertices, int count, int vertex_bytes, const unsigned char *atlas, int atlas_size,
+	int dirty_top, int dirty_bottom, const unsigned char *icons, int icon_size, int icon_count,
+	const unsigned char *picture, int picture_width, int picture_height, int picture_serial,
+	const float cutouts[4][4], int window_width, int window_height)
+{
+	struct vk_command_overlay *command;
+	uint32_t vertices_id = 0, atlas_id = 0, icons_id = 0, picture_id = 0;
+	int dirty_rows = dirty_bottom > dirty_top ? dirty_bottom - dirty_top : 0;
+
+	if (count <= 0 || vertex_bytes <= 0 || window_width <= 0 || window_height <= 0)
+		return;
+	vertices_id = vk_data_put(vertices, (unsigned long)count * (unsigned long)vertex_bytes);
+	if (atlas && atlas_size > 0 && dirty_rows > 0)
+	{
+		atlas_id = vk_data_put(atlas + (unsigned long)dirty_top * (unsigned long)atlas_size,
+			(unsigned long)dirty_rows * (unsigned long)atlas_size);
+	}
+	if (!overlay_icons_sent && icons && icon_size > 0 && icon_count > 0)
+	{
+		icons_id = vk_data_put(icons, (unsigned long)icon_size * (unsigned long)icon_size * 4UL * (unsigned long)icon_count);
+		overlay_icons_sent = TRUE;
+	}
+	if (picture && picture_width > 0 && picture_height > 0 && picture_serial != overlay_picture_serial)
+	{
+		picture_id = vk_data_put(picture, (unsigned long)picture_width * (unsigned long)picture_height * 4UL);
+		overlay_picture_serial = picture_serial;
+	}
+	command = stream_command(VK_COMMAND_OVERLAY, sizeof(*command));
+	memset(command, 0, sizeof(*command));
+	command->header.type = VK_COMMAND_OVERLAY;
+	command->header.size = sizeof(*command);
+	command->vertices.id = vertices_id;
+	command->vertex_count = (uint32_t)count;
+	command->vertex_bytes = (uint32_t)vertex_bytes;
+	command->atlas.id = atlas_id;
+	command->atlas_size = (uint32_t)atlas_size;
+	command->dirty_top = (uint32_t)(dirty_rows > 0 ? dirty_top : 0);
+	command->dirty_rows = (uint32_t)dirty_rows;
+	command->icons.id = icons_id;
+	command->icon_size = (uint32_t)icon_size;
+	command->icon_count = (uint32_t)icon_count;
+	command->picture.id = picture_id;
+	command->picture_width = (uint32_t)picture_width;
+	command->picture_height = (uint32_t)picture_height;
+	command->picture_serial = (uint32_t)picture_serial;
+	memcpy(command->cutouts, cutouts, sizeof(command->cutouts));
+	command->window_width = (uint32_t)window_width;
+	command->window_height = (uint32_t)window_height;
+}
+
 void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destination_rectangle,
 	void *unused, void *unused2)
 {
@@ -2883,10 +2989,28 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 	(void)unused2;
 	if (device.video_ready)
 	{
-		struct vk_command_present *command = stream_command(VK_COMMAND_PRESENT, sizeof(*command));
+		struct vk_surface back_buffer;
+		struct vk_command_present *command;
 		float scale[2];
+		int window_width = 0, window_height = 0, width, height, x, y;
 
-		surface_describe(&device.back_buffer, FALSE, &command->back_buffer, scale);
+		surface_describe(&device.back_buffer, FALSE, &back_buffer, scale);
+		platform_video_drawable_size(&window_width, &window_height);
+		if (window_width > 0 && window_height > 0 && back_buffer.pixel_width > 0 && back_buffer.pixel_height > 0)
+		{
+			width = window_width;
+			height = (int)((long)window_width * back_buffer.pixel_height / back_buffer.pixel_width);
+			if (height > window_height)
+			{
+				height = window_height;
+				width = (int)((long)window_height * back_buffer.pixel_width / back_buffer.pixel_height);
+			}
+			x = (window_width - width) / 2;
+			y = (window_height - height) / 2;
+			ui_overlay_present(x, y, width, height, window_width, window_height);
+		}
+		command = stream_command(VK_COMMAND_PRESENT, sizeof(*command));
+		command->back_buffer = back_buffer;
 		stream_flush();
 		/* the host starts the next frame with nothing bound, and with no data */
 		targets_known = FALSE;
