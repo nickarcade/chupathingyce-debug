@@ -515,7 +515,7 @@ static const struct config_setting config_settings[] =
 		"Moving the mouse forward looks down." },
 	{ "input.mouse_aim_assist", _config_boolean, "false", "HALO_MOUSE_AIM_ASSIST", _environment_value, _platform_all,
 		"Give the mouse aim assist, as a controller has." },
-	{ "input.keyboard_prompts", _config_boolean, "true", "HALO_KEYBOARD_PROMPTS", _environment_value, _platform_desktop,
+	{ "input.keyboard_prompts", _config_boolean, "true", "HALO_KEYBOARD_PROMPTS", _environment_value, _platform_all,
 		"Show keys in button prompts while you use the keyboard and mouse." },
 	{ "input.touch_controls", _config_string, "\"on\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android,
 		"On-screen touch controls: \"on\" or \"off\". \"auto\" shows them only\n"
