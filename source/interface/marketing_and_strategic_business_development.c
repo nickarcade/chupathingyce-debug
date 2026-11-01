@@ -26,22 +26,7 @@ static boolean check_for_demos = TRUE;
 boolean xbox_demos_available(
 	void)
 {
-	struct file_reference file;
-	
-	if (check_for_demos==TRUE)
-	{
-		if (file_reference_create_from_path(&file, "d:\\XDemos\\XDemos.xbe", FALSE))
-		{
-			if (file_exists(&file))
-			{
-				demos_available = TRUE;
-			}
-		}
-
-		check_for_demos = FALSE;
-	}
-
-	return demos_available;
+	return FALSE;
 }
 
 /* must include here to preserve order */

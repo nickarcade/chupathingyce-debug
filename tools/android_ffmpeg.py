@@ -43,7 +43,7 @@ LIBRARIES = ["libavformat", "libavcodec", "libswscale", "libswresample", "libavu
 # the guest's ABI flags (tools/android_build.py's GUEST_ABI_FLAGS, what FFmpeg needs)
 GUEST_FLAGS = ("--target=arm64_32-apple-watchos -U__APPLE__ -U__MACH__ "
                "-fno-define-target-os-macros -D__linux__=1 -D__unix__=1 "
-               "-DHALO_ARM64_GUEST=1 -DHALO_ANDROID=1 -D_GNU_SOURCE -mcpu=cortex-a53 "
+               "-DHALO_ARM64_GUEST=1 -DHALO_ANDROID=1 -D_GNU_SOURCE -mcpu=cortex-a76 "
                "-nostdinc -fshort-wchar -fno-stack-protector -fno-unwind-tables "
                "-fno-asynchronous-unwind-tables -femulated-tls "
                "-mllvm -aarch64-neon-syntax=generic -ffp-contract=off -fno-pic "
@@ -143,7 +143,7 @@ fi
     -isystem "{musl}/include" -isystem "{resource}/include" -idirafter "{compat}" \\
     -S "$src" -o "$out.darwin.s"
 python3 "{convert}" "$out.darwin.s" "$out.s"
-"$CLANG" --target=aarch64-linux-android -c "$out.s" -o "$out"
+"$CLANG" --target=aarch64-linux-android -mcpu=cortex-a76 -c "$out.s" -o "$out"
 if [ -n "$depfile" ]; then printf '%s: %s\\n' "$out" "$src" > "$depfile"; fi
 """)
     wrapper.chmod(0o755)

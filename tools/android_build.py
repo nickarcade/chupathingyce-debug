@@ -93,10 +93,8 @@ GUEST_ABI_FLAGS = [
     "-D__linux__=1",
     "-D__unix__=1",
     "-DHALO_ANDROID=1",
-    # ARMv8.0: nothing the emulator's binary translation or an older
-    # device could lack (Darwin targets otherwise assume pointer
-    # authentication and FP16)
-    "-mcpu=cortex-a53",
+    # Snapdragon 855 (Cortex-A76 Kryo 485) architecture tuning
+    "-mcpu=cortex-a76",
     "-nostdinc",
     "-fshort-wchar",
     "-fno-stack-protector",
@@ -466,14 +464,14 @@ def generate_android_build(n: Writer, sln: Any) -> None:
         name="android_guest_cc",
         command=(f"{compile_launcher(sln)}$android_guest_cc -MMD -MF $out.d $cflags -S $in -o $out.darwin.s && "
                  f"{python} tools/android_asm_convert.py $out.darwin.s $out.s && "
-                 f"$android_guest_cc --target=aarch64-linux-android -c $out.s -o $out"),
+                 f"$android_guest_cc --target=aarch64-linux-android -mcpu=cortex-a76 -c $out.s -o $out"),
         description="ANDROID CC $out",
         depfile="$out.d",
         deps="gcc",
     )
     n.rule(
         name="android_guest_as",
-        command="$android_guest_cc --target=aarch64-linux-android -c $in -o $out",
+        command="$android_guest_cc --target=aarch64-linux-android -mcpu=cortex-a76 -c $in -o $out",
         description="ANDROID AS $out",
     )
 
@@ -751,13 +749,13 @@ def generate_android_build(n: Writer, sln: Any) -> None:
     host_obj_dir = BUILD / "host" / "obj"
     n.rule(
         name="android_host_cc",
-        command="$android_host_cc -MMD -MF $out.d $cflags -c $in -o $out",
+        command=f"{compile_launcher(sln)}$android_host_cc -MMD -MF $out.d $cflags -c $in -o $out",
         description="ANDROID HOST CC $out",
         depfile="$out.d",
         deps="gcc",
     )
     host_cflags = " ".join([
-        "-O2", "-g", "-fPIC", "-Wall", "-Wno-unused-function", "-D_GNU_SOURCE",
+        "-O2", "-g", "-fPIC", "-mcpu=cortex-a76", "-march=armv8.2-a+dotprod+fp16+crypto+crc", "-fno-math-errno", "-Wall", "-Wno-unused-function", "-D_GNU_SOURCE",
         f"-I{PORT_DIR}/include", f"-I{PORT_DIR}/host", f"-I{SDL_DIR}/include", f"-I{LINUX_DIR}/src",
         f"-I{TOML_DIR}", f"-I{GLSLANG_DIR}",
         # the folder of the SPIR-V cache is named for the compiler (host_vk_shaders.c)

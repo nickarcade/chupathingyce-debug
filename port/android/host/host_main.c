@@ -23,6 +23,10 @@ and halo_guest_vk.elf, with Vulkan: port/android/VULKAN.md), display.vk_driver
 renderer.
 */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <sched.h>
 #include "host.h"
 #include "tomlc17.h"
 
@@ -288,6 +292,19 @@ static void *game_main(void *unused)
 	struct host_settings settings;
 
 	(void)unused;
+	/* Snapdragon 855: Pin the game thread to Kryo 485 Gold & Prime cores (Cores 4-7: mask 0xF0) */
+	{
+		cpu_set_t cpuset;
+		CPU_ZERO(&cpuset);
+		CPU_SET(4, &cpuset);
+		CPU_SET(5, &cpuset);
+		CPU_SET(6, &cpuset);
+		CPU_SET(7, &cpuset);
+		if (sched_setaffinity(0, sizeof(cpuset), &cpuset) == 0)
+		{
+			host_logf(HOST_LOG_INFO, "pinned game_main to Snapdragon 855 Gold/Prime cores 4-7 (mask 0xF0)");
+		}
+	}
 	external = SDL_GetAndroidExternalStoragePath();
 	if (!external)
 		host_fatal("Android storage is unavailable: %s", SDL_GetError());

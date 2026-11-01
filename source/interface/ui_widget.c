@@ -5436,16 +5436,8 @@ void main_screen_shell_load(
 		}
 		else
 		{
-			bink_playback_start(
-				attract_mode_get_localized_movie_path(_bink_intro_movie),
-				FLAG(_bink_playback_button_click_stops_movie_bit) |
-					FLAG(_bink_playback_prevent_events_to_ui_bit) |
-					FLAG(_bink_playback_return_to_main_menu_when_finished_bit) |
-					FLAG(_bink_playback_dont_allow_skipping_if_filesystem_check_thread_is_active_bit) |
-					FLAG(_bink_playback_eat_up_memory_like_a_goddamn_beaver_bit));
-			load_main_menu = FALSE;
-			if (!bink_playback_active())
-				load_main_menu = TRUE;
+			/* opening cinematic removed: boot straight to main menu */
+			load_main_menu = TRUE;
 		}
 		perform_filesystem_initialization();
 		input_abstraction_reset_controller_detection_timer();

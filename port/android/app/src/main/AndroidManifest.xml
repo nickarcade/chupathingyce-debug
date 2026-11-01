@@ -8,6 +8,10 @@
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 
+    <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+    </queries>
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
     <!-- controller rumble -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- system link multiplayer on the local network -->

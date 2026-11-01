@@ -517,9 +517,12 @@ static const struct config_setting config_settings[] =
 		"Give the mouse aim assist, as a controller has." },
 	{ "input.keyboard_prompts", _config_boolean, "true", "HALO_KEYBOARD_PROMPTS", _environment_value, _platform_all,
 		"Show keys in button prompts while you use the keyboard and mouse." },
-	{ "input.touch_controls", _config_string, "\"on\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android,
+	{ "input.touch_controls", _config_string, "\"off\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android,
 		"On-screen touch controls: \"on\" or \"off\". \"auto\" shows them only\n"
 		"when no controller is connected." },
+	{ "input.raw_hid", _config_boolean, "true", "HALO_RAW_HID", _environment_set_is_true, _platform_android | _platform_desktop,
+		"Raw USB HID input for controllers (HIDAPI): true bypasses the OS\n"
+		"gamepad abstraction for sub-millisecond polling and trigger rumble." },
 #ifdef HALO_SWITCH_CONSOLE
 	/* gyro aiming (port/linux/src/xinput_sdl.c): the controller's gyroscope,
 	each local player from their own */
@@ -3134,7 +3137,7 @@ static const struct
 	{ "display.follow_camera", { "long_waits", "always", "off", NULL }, "\"long_waits\"" },
 	{ "display.texture_decode", { "auto", "gpu", "cpu", NULL }, "\"auto\"" },
 	{ "audio.resampling", { "sinc", "linear", NULL }, "\"sinc\"" },
-	{ "input.touch_controls", { "on", "auto", "off", NULL }, "\"on\"" },
+	{ "input.touch_controls", { "on", "auto", "off", NULL }, "\"off\"" },
 	{ "game.console_log", { "important", "all", "none", NULL }, "\"important\"" },
 	{ "game.move_old_map_folders", { "ask", "yes", "no", NULL }, "\"ask\"" },
 	{ "network.protocol", { "auto", "opence", "delta", NULL }, NULL },
