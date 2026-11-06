@@ -2602,6 +2602,16 @@ static GLuint visibility_unscaled(GLuint samples, DWORD index)
 	return area > 1.0f ? (GLuint)(samples / area + 0.5f) : samples;
 }
 
+/* the main menu's line under the version number (menu_functions.c) */
+char const *d3d8_renderer_description(void)
+{
+#ifdef HALO_ANDROID
+	return "OpenGL ES";
+#else
+	return "OpenGL";
+#endif
+}
+
 HRESULT WINAPI D3DDevice_GetVisibilityTestResult(DWORD index, UINT *result, ULONGLONG *time_stamp)
 {
 	GLuint available = 0, samples = 0;
@@ -5924,4 +5934,18 @@ HRESULT WINAPI D3DDevice_PersistDisplay(void)
 
 #ifdef HALO_BGFX
 #include "d3d8_bgfx.inl"
+#elif defined(HALO_ANDROID)
+BOOL xgpu_bgfx = FALSE;
+
+void xgpu_bgfx_overlay_draw(const void *vertices, int count, int vertex_bytes, const unsigned char *atlas, int atlas_size,
+	int dirty_top, int dirty_bottom, const unsigned char *icons, int icon_size, int icon_count,
+	const unsigned char *picture, int picture_width, int picture_height, int picture_serial,
+	const float cutouts[4][4], int window_width, int window_height)
+{
+	(void)vertices; (void)count; (void)vertex_bytes;
+	(void)atlas; (void)atlas_size; (void)dirty_top; (void)dirty_bottom;
+	(void)icons; (void)icon_size; (void)icon_count;
+	(void)picture; (void)picture_width; (void)picture_height; (void)picture_serial;
+	(void)cutouts; (void)window_width; (void)window_height;
+}
 #endif

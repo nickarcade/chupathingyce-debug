@@ -49,11 +49,9 @@ static unsigned char keys_pressed[SDL_SCANCODE_COUNT];
 /* likewise the mouse buttons pressed since the last read, so that a click
 quicker than a frame still counts */
 static unsigned char mouse_buttons_pressed[PLATFORM_MOUSE_BUTTON_COUNT];
-#ifndef HALO_ANDROID
 /* the menus' pointer (platform_ui_pointer_set_active), under input_lock */
 static struct platform_ui_pointer ui_pointer;
 static float ui_pointer_wheel;
-#endif
 static pthread_mutex_t input_lock = PTHREAD_MUTEX_INITIALIZER;
 /* rebinding (platform_binding_capture_begin), under input_lock: waiting for
 an input, and the one taken; then the keyboard and mouse settle (their keys
@@ -394,6 +392,17 @@ BOOL platform_sdl_initialize(void)
 	/* touching the screen must not aim or fire (the mouse drives the
 	controller emulation in xinput_sdl.c) */
 	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+	/* raw USB HID controller input: bypasses Android's InputReader for
+	hardware polling rates and trigger impulse rumble */
+	if (config_boolean("input.raw_hid"))
+	{
+		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI, "1");
+		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "1");
+		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4, "1");
+		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5, "1");
+		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
+		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
+	}
 #endif
 #ifdef HALO_GAME_BROWSER
 	/* the dedicated server and a probe play no sound and need no display
@@ -2347,16 +2356,15 @@ void platform_pump_events(void)
 #endif
 			break;
 		case SDL_EVENT_MOUSE_MOTION:
-#ifndef HALO_ANDROID
 			/* in the menus the mouse moves the pointer, not the view */
 			if (input_state.ui_pointer)
 			{
 				ui_pointer.x = event.motion.x;
 				ui_pointer.y = event.motion.y;
 				ui_pointer.moved = TRUE;
+				ui_pointer.touch = FALSE;
 				break;
 			}
-#endif
 			input_state.mouse_dx += event.motion.xrel;
 			input_state.mouse_dy += event.motion.yrel;
 			break;
@@ -2380,7 +2388,6 @@ void platform_pump_events(void)
 				binding_captured_input = INPUT_MOUSE + event.button.button;
 				break;
 			}
-#ifndef HALO_ANDROID
 			/* clicks in the menus go to the pointer; a button held down
 			when the menu closes stays up until pressed again, so the click
 			that resumes the game does not also fire */
@@ -2391,14 +2398,17 @@ void platform_pump_events(void)
 					ui_pointer.left_clicks++;
 					ui_pointer.click_x = event.button.x;
 					ui_pointer.click_y = event.button.y;
+					ui_pointer.x = event.button.x;
+					ui_pointer.y = event.button.y;
+					ui_pointer.touch = FALSE;
 				}
 				else if (event.button.down && event.button.button == SDL_BUTTON_RIGHT)
 				{
 					ui_pointer.right_clicks++;
+					ui_pointer.touch = FALSE;
 				}
 				break;
 			}
-#endif
 			if (event.button.button < PLATFORM_MOUSE_BUTTON_COUNT)
 			{
 				input_state.mouse_buttons[event.button.button] = event.button.down;
@@ -2431,7 +2441,6 @@ void platform_pump_events(void)
 				}
 				break;
 			}
-#ifndef HALO_ANDROID
 			if (input_state.ui_pointer)
 			{
 				/* whole notches: smooth-scrolling wheels send fractions */
@@ -2446,9 +2455,9 @@ void platform_pump_events(void)
 					ui_pointer.wheel_steps--;
 					ui_pointer_wheel += 1.0f;
 				}
+				ui_pointer.touch = FALSE;
 				break;
 			}
-#endif
 			input_state.mouse_wheel += event.wheel.y;
 			break;
 		case SDL_EVENT_WINDOW_FOCUS_LOST:
@@ -2581,7 +2590,9 @@ void platform_ui_pointer_set_active(BOOL active)
 	memset(input_state.mouse_buttons, 0, sizeof(input_state.mouse_buttons));
 	memset(mouse_buttons_pressed, 0, sizeof(mouse_buttons_pressed));
 	pthread_mutex_unlock(&input_lock);
+#ifndef HALO_ANDROID
 	platform_mouse_capture(!active && !input_state.mouse_released);
+#endif
 	if (active)
 	{
 		int width, height;
@@ -2664,17 +2675,32 @@ void platform_video_window_size(int *width, int *height)
 }
 
 #else
-/* ---------- the menus' pointer (the touchscreen)
+/* ---------- the menus' pointer (hardware mouse and touchscreen)
 
-While a menu is up, taps and drags go to the menus (touch_input.c,
-halo_ui_pointer_update in d3d8_gl.c). */
+While a menu is up, the mouse is released and its motion, clicks and wheel
+go to the menus (along with touchscreen taps and drags from touch_input.c,
+halo_ui_pointer_update in d3d8_gl.c / d3d8_vk.c). */
 void platform_ui_pointer_set_active(BOOL active)
 {
+	if (!platform_window || (active != FALSE) == (input_state.ui_pointer != FALSE))
+		return;
 	pthread_mutex_lock(&input_lock);
-	if ((active != FALSE) != (input_state.ui_pointer != FALSE))
+	input_state.ui_pointer = active;
+	memset(&ui_pointer, 0, sizeof(ui_pointer));
+	ui_pointer_wheel = 0.0f;
+	input_state.mouse_dx = 0.0f;
+	input_state.mouse_dy = 0.0f;
+	input_state.mouse_wheel = 0.0f;
+	memset(input_state.mouse_buttons, 0, sizeof(input_state.mouse_buttons));
+	memset(mouse_buttons_pressed, 0, sizeof(mouse_buttons_pressed));
+	touch_input_menu_set_active(active != FALSE);
+	if (active)
 	{
-		input_state.ui_pointer = active;
-		touch_input_menu_set_active(active != FALSE);
+		int width = 0, height = 0;
+
+		platform_video_drawable_size(&width, &height);
+		ui_pointer.x = width * 0.5f;
+		ui_pointer.y = height * 0.5f;
 	}
 	pthread_mutex_unlock(&input_lock);
 }
@@ -2682,10 +2708,26 @@ void platform_ui_pointer_set_active(BOOL active)
 BOOL platform_ui_pointer_read(struct platform_ui_pointer *pointer)
 {
 	BOOL active;
+	struct platform_ui_pointer touch;
 
 	pthread_mutex_lock(&input_lock);
 	active = input_state.ui_pointer;
-	touch_input_menu_read(pointer);
+	touch_input_menu_read(&touch);
+	if (touch.moved || touch.left_clicks || touch.wheel_steps || touch.downs)
+	{
+		*pointer = touch;
+		ui_pointer.x = touch.x;
+		ui_pointer.y = touch.y;
+		ui_pointer.touch = TRUE;
+	}
+	else
+	{
+		*pointer = ui_pointer;
+	}
+	ui_pointer.moved = FALSE;
+	ui_pointer.left_clicks = 0;
+	ui_pointer.right_clicks = 0;
+	ui_pointer.wheel_steps = 0;
 	pthread_mutex_unlock(&input_lock);
 	return active;
 }

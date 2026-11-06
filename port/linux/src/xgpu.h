@@ -258,10 +258,17 @@ struct xgpu_render_target
 /* the GL texture holding a render target with this physical address, or 0 */
 struct xgpu_render_target *xgpu_render_target_find(unsigned long data);
 
-#ifdef HALO_BGFX
-/* display.renderer is "bgfx": the bgfx test backend draws instead of OpenGL
-(d3d8_bgfx.inl), from platform_video_initialize on */
+#if defined(HALO_BGFX) || defined(HALO_ANDROID)
+/* display.renderer is "bgfx" (or the Android Vulkan renderer): the backend
+draws instead of OpenGL, from platform_video_initialize on */
 extern BOOL xgpu_bgfx;
+/* the overlay's quads (ui_overlay.c) over the window's picture at Present */
+void xgpu_bgfx_overlay_draw(const void *vertices, int count, int vertex_bytes, const unsigned char *atlas, int atlas_size,
+	int dirty_top, int dirty_bottom, const unsigned char *icons, int icon_size, int icon_count,
+	const unsigned char *picture, int picture_width, int picture_height, int picture_serial,
+	const float cutouts[4][4], int window_width, int window_height);
+#endif
+#ifdef HALO_BGFX
 /* a level of a texture that is not compressed, as 32-bit ARGB words (B, G,
 R, A in memory); FALSE without the memory for it */
 BOOL xgpu_texture_decode_level(const struct xgpu_texture_description *description, unsigned long level,
@@ -278,11 +285,6 @@ unsigned int xgpu_bgfx_texture_create(unsigned long width, unsigned long height,
 void xgpu_bgfx_texture_rows(unsigned int name, unsigned long top, unsigned long width, unsigned long rows,
 	const unsigned char *rgba);
 void xgpu_bgfx_texture_delete(unsigned int name);
-/* the overlay's quads (ui_overlay.c) over the window's picture at Present */
-void xgpu_bgfx_overlay_draw(const void *vertices, int count, int vertex_bytes, const unsigned char *atlas, int atlas_size,
-	int dirty_top, int dirty_bottom, const unsigned char *icons, int icon_size, int icon_count,
-	const unsigned char *picture, int picture_width, int picture_height, int picture_serial,
-	const float cutouts[4][4], int window_width, int window_height);
 #endif
 
 /* ---------- anti-aliasing

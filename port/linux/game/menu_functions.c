@@ -1530,6 +1530,31 @@ static void video_rows_show(struct widget_instance *list)
 	}
 }
 
+/* Video Setup's Vulkan Driver (Android's: tools/port_settings.py), shown
+while the backend shown is Vulkan; the list passes over it while it is
+hidden, and the focus on it goes to the backend's row */
+static void vk_driver_row_show(struct widget_instance *list)
+{
+	struct widget_instance *renderer = named(list, "renderer_spinner", 0);
+	struct widget_instance *renderer_row = named(list, "op_renderer", 0);
+	struct widget_instance *driver_row = named(list, "op_vk_driver", 0);
+	struct pc_menu_setting *setting = renderer ? pc_menu_setting_get(renderer->definition_tag_index) : NULL;
+	struct widget_instance *child;
+	short index;
+
+	if (!setting || !renderer_row || !driver_row)
+		return;
+	index = renderer->parameters.list.selected_index;
+	driver_row->visible = index >= 0 && index < setting->value_count && !strcmp(setting->values[index], "vulkan");
+	if (!driver_row->visible && list->focused_child == driver_row)
+	{
+		for (index = 0, child = list->child; child && child != renderer_row; child = child->next)
+			index++;
+		list->focused_child = renderer_row;
+		list->parameters.list.selected_index = index;
+	}
+}
+
 /* ---------- the settings screens' nested lists (tools/port_settings.py's
 VIEWS): a row of a list (op_link_<view>) opens another list in the same
 screen, and B goes back out of it. Each list's rows follow a mark, an empty
@@ -1756,7 +1781,6 @@ static void settings_each_in_view(struct widget_instance *list, char const *view
 			settings_each(row, visit);
 	}
 }
-
 /* ---------- Change Color: the profile's colour, from a list of the
 game's colours (more than its rows: it scrolls), by the Xbox's names for
 its spinner's functions */
@@ -8936,6 +8960,26 @@ static boolean profile_list_delta_chosen(struct widget_instance const *widget)
 
 #endif
 
+
+/* ---------- the renderer, under the version number */
+
+/* the renderer the game draws with, and the driver it was given if it is not the system's own, as a line for the main menu
+(a second, the driver's, after a '\r'); each renderer says (d3d8_gl.c, port/android/guest/d3d8_vk.c). A renderer that does
+not leaves the line empty. */
+__attribute__((weak)) char const *d3d8_renderer_description(void)
+{
+	return NULL;
+}
+
+static void renderer_text_update(struct widget_instance *text_box)
+{
+	char const *description = d3d8_renderer_description();
+	wchar_t text[ROW_TEXT_LENGTH];
+
+	if (!description || !ascii_to_wide(description, text, sizeof(text)))
+		return;
+	text_set(text_box, text);
+}
 /* ---------- public code */
 
 boolean pc_menu_event_function_invoke(
@@ -9459,7 +9503,10 @@ void pc_menu_game_data_function_invoke(
 		if (views_list(widget) == widget)
 			views_show(widget, settings_view);
 		if (views_list(widget) != widget || !strcmp(settings_view, "main"))
+		{
 			video_rows_show(widget);
+			vk_driver_row_show(widget);
+		}
 		settings_help(widget);
 	}
 	else if (!strcmp(name, "port controls update"))
@@ -9486,4 +9533,6 @@ void pc_menu_game_data_function_invoke(
 		chupathingy_settings_picture(widget);
 	else if (!strcmp(name, "port host update"))
 		host_update(widget);
+	else if (!strcmp(name, "port renderer textbox"))
+		renderer_text_update(widget);
 }

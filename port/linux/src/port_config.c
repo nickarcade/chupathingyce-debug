@@ -299,6 +299,20 @@ static const struct config_setting config_settings[] =
 #endif
 	{ "display.screen_width", _config_integer, "0", "HALO_SCREEN_WIDTH", _environment_value, _platform_android,
 		"The picture's width in columns. 0 matches the display. 640 is 4:3." },
+	/* read by the Android host (port/android/host/host_vk_driver.c) */
+	{ "display.vk_driver", _config_string, "\"mainline-turnip-V32.zip\"", "HALO_VK_DRIVER", _environment_value, _platform_android,
+		"The Vulkan driver the Vulkan renderer runs on: empty for the phone's own;\n"
+		"\"auto\" for Turnip, the open-source driver, on an Adreno GPU (the app\n"
+		"downloads the build for its series; the phone's own on any other GPU); or the\n"
+		"name of a driver archive (an adrenotools zip) left in the game's folder. One\n"
+		"that does not load is logged and the phone's own is used." },
+	/* read by the Android host before the game starts, to choose the game
+	image built with that renderer (port/android/VULKAN.md) */
+	{ "display.renderer", _config_string, "\"vulkan\"", "HALO_RENDERER", _environment_value, _platform_android,
+		"How the game draws: \"gl\" (OpenGL ES over the phone's driver) or \"vulkan\"\n"
+		"(over display.vk_driver; OpenGL ES if Vulkan cannot start). Takes effect the\n"
+		"next time the game starts. See the Android README, \"Graphics: OpenGL ES and\n"
+		"Vulkan\"." },
 	{ "display.vsync", _config_boolean, "true", "HALO_NO_VSYNC", _environment_set_is_false, _platform_all,
 		"Wait for the display between frames (V-Sync)." },
 	{ "display.max_fps", _config_integer, "0", "HALO_MAX_FPS", _environment_value, _platform_all,
@@ -604,11 +618,14 @@ static const struct config_setting config_settings[] =
 		"Moving the mouse forward looks down." },
 	{ "input.mouse_aim_assist", _config_boolean, "false", "HALO_MOUSE_AIM_ASSIST", _environment_value, _platform_all,
 		"Give the mouse aim assist, as a controller has." },
-	{ "input.keyboard_prompts", _config_boolean, "true", "HALO_KEYBOARD_PROMPTS", _environment_value, _platform_desktop,
+	{ "input.keyboard_prompts", _config_boolean, "true", "HALO_KEYBOARD_PROMPTS", _environment_value, _platform_all,
 		"Show keys in button prompts while you use the keyboard and mouse." },
-	{ "input.touch_controls", _config_string, "\"on\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android,
+	{ "input.touch_controls", _config_string, "\"off\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android,
 		"On-screen touch controls: \"on\" or \"off\". \"auto\" shows them only\n"
 		"when no controller is connected." },
+	{ "input.raw_hid", _config_boolean, "true", "HALO_RAW_HID", _environment_set_is_true, _platform_android | _platform_desktop,
+		"Raw USB HID input for controllers (HIDAPI): true bypasses the OS\n"
+		"gamepad abstraction for sub-millisecond polling and trigger rumble." },
 #ifdef HALO_SWITCH_CONSOLE
 	/* gyro aiming (port/linux/src/xinput_sdl.c): the controller's gyroscope,
 	each local player from their own */
@@ -1368,6 +1385,15 @@ static const struct config_setting config_settings[] =
 		"It is slow: it waits for the GPU each time. Takes effect at the next\n"
 		"start." },
 #endif
+	{ "debug.vk_present_marker", _config_boolean, "false", "HALO_VK_PRESENT_MARKER", _environment_set_is_true, _platform_android,
+		"Under the Vulkan renderer, draw a red square at the top left and a green one\n"
+		"at the top right of the picture, so that a screenshot shows which way up it is." },
+	{ "debug.vk_self_test", _config_boolean, "false", "HALO_VK_SELF_TEST", _environment_set_is_true, _platform_android,
+		"Under the Vulkan renderer, try the renderer's clears and the copying of a\n"
+		"draw's data on small targets of its own at start-up; the log says ok or FAILED." },
+	{ "debug.vk_validation", _config_boolean, "false", "HALO_VK_VALIDATION", _environment_set_is_true, _platform_android,
+		"Turn on Vulkan's validation layer in the Vulkan renderer, when the app\n"
+		"carries it (configure.py --android-vulkan-validation)." },
 
 	/* ---- console: the original Xbox's own (port/xbox/src/xbox_config.c),
 	once empty files beside default.xbe (D:\memory_64.txt and the rest), and
@@ -3352,7 +3378,7 @@ static const struct
 	{ "display.follow_camera", { "long_waits", "always", "off", NULL }, "\"off\"" },
 	{ "display.texture_decode", { "auto", "gpu", "cpu", NULL }, "\"auto\"" },
 	{ "audio.resampling", { "sinc", "linear", NULL }, "\"sinc\"" },
-	{ "input.touch_controls", { "on", "auto", "off", NULL }, "\"on\"" },
+	{ "input.touch_controls", { "on", "auto", "off", NULL }, "\"off\"" },
 	{ "game.console_log", { "important", "all", "none", NULL }, "\"important\"" },
 	{ "game.move_old_map_folders", { "ask", "yes", "no", NULL }, "\"ask\"" },
 	{ "network.protocol", { "auto", "opence", "delta", NULL }, NULL },

@@ -31,6 +31,10 @@ heaps cannot be in the way. If even that fails, the player is told here
 rather than the app vanishing.
 */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <sched.h>
 #include <SDL3/SDL.h>
 #include <android/log.h>
 #include <dlfcn.h>
@@ -177,6 +181,19 @@ static void *game_thread(void *unused)
 	static char name[] = "halo";
 	char *arguments[] = { name, NULL };
 	int code;
+
+	/* Snapdragon 855: Pin the game thread to Kryo 485 Gold & Prime cores (Cores 4-7: mask 0xF0) */
+	cpu_set_t cpuset;
+	CPU_ZERO(&cpuset);
+	CPU_SET(4, &cpuset);
+	CPU_SET(5, &cpuset);
+	CPU_SET(6, &cpuset);
+	CPU_SET(7, &cpuset);
+	if (sched_setaffinity(0, sizeof(cpuset), &cpuset) == 0)
+	{
+		__android_log_print(ANDROID_LOG_INFO, HOST_LOG_TAG,
+			"pinned game_thread to Snapdragon 855 Gold/Prime cores 4-7 (mask 0xF0)");
+	}
 
 	(void)unused;
 	code = main(1, arguments);

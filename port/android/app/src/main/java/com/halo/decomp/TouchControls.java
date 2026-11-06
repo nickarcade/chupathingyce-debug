@@ -316,13 +316,16 @@ public final class TouchControls extends View implements SensorEventListener, In
 
     @Override public boolean onTouchEvent(MotionEvent event) {
         int action = event.getActionMasked(), index = event.getActionIndex();
+        if ((event.getSource() & InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE
+                || event.getToolType(index) == MotionEvent.TOOL_TYPE_MOUSE) {
+            return false;
+        }
         int id = event.getPointerId(index);
         float x = (event.getX(index)-offsetX)/scale, y = (event.getY(index)-offsetY)/scale;
         if (!shown() && !editing && !optionsOpen) {
             // the menus and cinematics take the fingers (SDL's surface below)
-            if (action == MotionEvent.ACTION_DOWN) return false;
             if (owners.size() > 0 || lookPointer >= 0) { reset(); invalidate(); }
-            return true;
+            return false;
         }
         if (editing) return editTouch(event, action, index, id, x, y);
         if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)

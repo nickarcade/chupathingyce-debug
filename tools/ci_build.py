@@ -118,7 +118,7 @@ def main() -> int:
             parser.error("--alpine builds the servers only")
         return alpine_build(args.platform, args.config)
 
-    configure = [sys.executable, "configure.py", "--portable"]
+    configure = [sys.executable, "configure.py", "--portable", "--without-bgfx"]
     if server:
         # (the profiles are the 32-bit game's, which the servers' clang may
         # not read; a server's work is light)

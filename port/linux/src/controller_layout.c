@@ -29,8 +29,8 @@ The controller's buttons for the game's actions (controller_layout.h).
 has them (tools/test_controller_layout.py checks the two agree) */
 static const unsigned char preset_layouts[CONTROLLER_PRESET_CUSTOM][CONTROLLER_ACTION_COUNT] =
 {
-	/* jump, switch grenade, action, switch weapon, melee, flashlight, grenade, fire, start, back, crouch, zoom */
-	{ A, BLACK, X, Y, B, WHITE, LT, RT, START, BACK, LS, RS },
+	/* (Bumper Jumper as Default) jump, switch grenade, action, switch weapon, melee, flashlight, grenade, fire, start, back, crouch, zoom */
+	{ WHITE, A, B, Y, BLACK, X, LT, RT, START, BACK, LS, RS },
 	{ A, BLACK, X, Y, B, WHITE, RT, LT, START, BACK, LS, RS },
 	{ LT, BLACK, X, Y, B, WHITE, A, RT, START, BACK, LS, RS },
 	{ A, BLACK, X, Y, LT, WHITE, B, RT, START, BACK, LS, RS },

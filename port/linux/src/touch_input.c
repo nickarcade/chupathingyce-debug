@@ -217,9 +217,11 @@ static int touch_controls_setting(void)
 		const char *value = config_string("input.touch_controls");
 
 		read_at = config_changes();
-		setting = _touch_scene_on;
+		setting = _touch_scene_off;
 		if (value && !strcmp(value, "auto"))
 			setting = 0;
+		else if (value && !strcmp(value, "on"))
+			setting = _touch_scene_on;
 		else if (value && !strcmp(value, "off"))
 			setting = _touch_scene_off;
 	}

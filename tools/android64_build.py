@@ -110,6 +110,9 @@ def generate_android64_build(n: Writer, sln: Any) -> None:
     lp64 = Lp64Build(n, sln, "android64", _quote(cc))
     target_flags = [
         ANDROID64_TARGET,
+        "-mcpu=cortex-a76",
+        "-march=armv8.2-a+dotprod+fp16+crypto+crc",
+        "-fno-math-errno",
         # a shared library (SDLActivity loads it)
         "-fPIC",
         "-DHALO_ANDROID=1",
@@ -164,6 +167,7 @@ def generate_android64_build(n: Writer, sln: Any) -> None:
         variables={
             "ldflags": " ".join([
                 ANDROID64_TARGET, "-shared", "-g", "-fuse-ld=lld", *lto_ldflags,
+                "-mcpu=cortex-a76", "-march=armv8.2-a+dotprod+fp16+crypto+crc",
                 # the library's own definitions first, as an executable's are
                 # (the game's names that bionic or SDL3 also define)
                 "-Wl,-Bsymbolic",

@@ -40,49 +40,12 @@ static short data_002e4c84 = NONE;
 boolean attract_mode_should_start(
 	void)
 {
-	boolean should_start = FALSE;
-	real progress;
-
-	if (cache_files_precache_in_progress() &&
-		cache_files_precache_map_status(&progress)==1)
+	if (main_menu_screen_is_active() && !ui_main_menu_music_active())
 	{
-		cache_files_precache_map_end();
+		ui_start_main_menu_music();
 	}
 
-	if (main_menu_screen_is_active() &&
-		!cache_files_precache_in_progress() &&
-		!network_game_is_active() &&
-		!bink_playback_active())
-	{
-		unsigned long time_elapsed;
-		unsigned long current_time = system_milliseconds();
-		unsigned long time_since_last_event = event_manager_time_of_last_event();
-		
-		time_since_last_event = MAX(attract_mode_countdown_timer, time_since_last_event);
-		time_elapsed = current_time-time_since_last_event;
-	
-		if (time_elapsed>=ATTRACT_MODE_COUNTDOWN-MUSIC_FADE_TIME)
-		{
-			if (ui_main_menu_music_active())
-			{
-				ui_stop_main_menu_music();
-			}
-		}
-		else
-		{
-			if (!ui_main_menu_music_active())
-			{
-				ui_start_main_menu_music();
-			}
-		}
-
-		if (time_elapsed>=ATTRACT_MODE_COUNTDOWN)
-		{
-			should_start = TRUE;
-		}
-	}
-
-	return should_start;
+	return FALSE;
 }
 
 void attract_mode_reset_timer(
@@ -193,29 +156,7 @@ const char *attract_mode_get_localized_movie_path(
 void attract_mode_start(
 	void)
 {
-	short video_index;
-
-	while (TRUE)
-	{
-		video_index = seed_random_range(get_global_local_random_seed_address(), 0, NUMBER_OF_ATTRACT_MODE_MOVIES);
-		video_index = PIN(video_index, 0, _bink_attract3_movie);
-
-		if (video_index!=data_002e4c84)
-		{
-			data_002e4c84 = video_index;
-			break;
-		}
-	}
-
-	ui_stop_main_menu_music();
-
-	bink_playback_start(attract_mode_get_localized_movie_path(video_index), 0x2e);
-
-	if (!bink_playback_active())
-	{
-		attract_mode_countdown_timer = system_milliseconds();
-	}
-
+	/* attract mode cinematics disabled */
 	return;
 }
 

@@ -248,7 +248,7 @@ static void generate_default_player_profile(
 	match_vassert("c:\\halo\\SOURCE\\interface\\player_ui.c", 0x369, profile, "profile");
 	csmemset(profile, 0, sizeof(*profile));
 	profile->primary_color_index = NONE;
-	profile->controller_settings.button_preset = _button_preset_standard;
+	profile->controller_settings.button_preset = _button_preset_bumper_jumper;
 	profile->controller_settings.joystick_preset = _joystick_preset_standard;
 
 	return;

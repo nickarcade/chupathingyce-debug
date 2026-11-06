@@ -41,7 +41,7 @@ here at start-up (port/switch/host/host_memory.c). */
 keeps its heaps low in the address space and fills it upwards */
 #define HALO_GUEST_IMAGE_BASE 0x88000000u
 /* the room the host reserves for the image there (port/android/host/host_memory.c) */
-#define HALO_GUEST_IMAGE_RESERVE 0x04000000u
+#define HALO_GUEST_IMAGE_RESERVE 0x06000000u
 #endif
 
 /* the Xbox contiguous memory window (port/linux/src/platform.h). The game
