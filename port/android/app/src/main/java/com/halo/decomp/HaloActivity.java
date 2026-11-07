@@ -59,9 +59,9 @@ public class HaloActivity extends SDLActivity {
     private boolean isTouchControlsDisabled() {
         try {
             java.io.File root = getExternalFilesDir(null);
-            if (root == null) return false;
+            if (root == null) return true;
             java.io.File config = new java.io.File(root, "config.toml");
-            if (!config.exists()) return false;
+            if (!config.exists()) return true;
             try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(config))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -71,15 +71,15 @@ public class HaloActivity extends SDLActivity {
                         int eq = trimmed.indexOf('=');
                         if (eq != -1) {
                             String val = trimmed.substring(eq + 1).trim();
-                            if (val.contains("off")) {
-                                return true;
+                            if (val.contains("on") || val.contains("auto")) {
+                                return false;
                             }
                         }
                     }
                 }
             }
         } catch (Throwable ignored) {}
-        return false;
+        return true;
     }
 
     @Override

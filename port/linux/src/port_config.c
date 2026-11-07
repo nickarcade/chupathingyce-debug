@@ -214,7 +214,7 @@ a phone, a handheld console's own 720 on the Switch, which has no "native" */
 	"also work. It never goes past what the console shows: 1280x720 in\n" \
 	"handheld, 1920x1080 docked. Changes at once."
 #else
-#define DEFAULT_RESOLUTION_LIMIT "\"480\""
+#define DEFAULT_RESOLUTION_LIMIT "\"720\""
 #define RESOLUTION_LIMIT_HELP \
 	"How many lines the game draws. The picture is scaled up to the display.\n" \
 	"\"480\" is the game's own. \"720\", \"900\", \"1080\" or any number between\n" \

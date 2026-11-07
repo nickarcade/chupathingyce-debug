@@ -48,7 +48,8 @@ SPIRV_CROSS_UNITS = ["spirv_cfg.cpp", "spirv_cross.cpp", "spirv_cross_parsed_ir.
 
 
 def bgfx_wanted(sln: Any) -> bool:
-    return False
+    """whether the 64-bit desktop builds have the bgfx renderer (configure.py --without-bgfx)"""
+    return getattr(sln, "with_bgfx", True)
 
 
 def _git_head(directory: Path) -> str:
@@ -96,6 +97,18 @@ def fetch_bgfx() -> bool:
 
 
 def bgfx_available(sln: Any) -> bool:
+    """whether this build has the bgfx renderer: wanted (configure.py
+    --without-bgfx), and its sources fetched (a machine without git or the
+    network, such as the dedicated server's container, builds without it
+    and says so)"""
+    if not bgfx_wanted(sln):
+        return False
+    try:
+        if fetch_bgfx():
+            return True
+    except OSError as error:
+        print(f"bgfx: {error}")
+    print("the bgfx renderer is left out: its sources could not be fetched (tools/bgfx_build.py)")
     return False
 
 
