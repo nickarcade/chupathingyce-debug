@@ -52,6 +52,17 @@ rather than the app vanishing.
 
 #include "host.h"
 
+int host_renderer_vulkan = 0;
+
+void host_logf(int priority, const char *format, ...)
+{
+	va_list arguments;
+
+	va_start(arguments, format);
+	__android_log_vprint(priority, HOST_LOG_TAG, format, arguments);
+	va_end(arguments);
+}
+
 /* the guest build's main thread stack (host_main.c) */
 #define GAME_STACK_SIZE (16 * 1024 * 1024)
 
