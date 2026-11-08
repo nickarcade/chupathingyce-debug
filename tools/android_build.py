@@ -62,6 +62,8 @@ SDL_TAG = "release-3.4.16"
 SDL_COMMIT = "fa2c02bb6e21974a89ea9824bc53c9932abe5f9c"
 SDL_DIR = THIRD_PARTY / "SDL3"
 SDL_URL = "https://github.com/libsdl-org/SDL.git"
+# SDL's Java side passes on a captured (relative) mouse's moves and buttons
+SDL_ANDROID_MOUSE_PATCH = PORT_DIR / "patches" / "sdl-relative-mouse.patch"
 ANDROID_API = 28
 # the Vulkan renderer's shader compiler (port/android/VULKAN.md): loaded with dlopen, never linked
 GLSLANG_TAG = "16.6.0"
@@ -243,6 +245,7 @@ def fetch_third_party(validation: bool = False) -> None:
         subprocess.run(["git", "clone", "-q", "--depth", "1", "--branch", SDL_TAG, SDL_URL, str(SDL_DIR)],
                        check=True)
         check_sdl_commit(SDL_DIR)
+    apply_sdl_patch(SDL_ANDROID_MOUSE_PATCH)
     if not GLSLANG_DIR.is_dir():
         print(f"Cloning glslang {GLSLANG_TAG}")
         subprocess.run(["git", "clone", "-q", "--depth", "1", "--branch", GLSLANG_TAG, GLSLANG_URL,
@@ -265,6 +268,14 @@ def fetch_third_party(validation: bool = False) -> None:
         subprocess.run(["curl", "-sSfL", "-o", str(archive), VALIDATION_URL], check=True)
         subprocess.run(["tar", "xzf", str(archive.resolve()), "-C", str(VALIDATION_DIR)], check=True)
         archive.unlink()
+
+
+def apply_sdl_patch(patch: Path) -> None:
+    """A patch to SDL3's clone, once (a clone that has it already is left alone)."""
+    applied = subprocess.run(["git", "-C", str(SDL_DIR), "apply", "--reverse", "--check", str(patch.resolve())],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if applied.returncode != 0:
+        subprocess.run(["git", "-C", str(SDL_DIR), "apply", str(patch.resolve())], check=True)
 
 
 def _patch_adrenotools() -> None:
@@ -303,8 +314,8 @@ def _musl_sources() -> List[Path]:
 
 
 def android_configure_inputs() -> List[Path]:
-    return [Path(__file__), PORT_DIR / "guest", PORT_DIR / "host", VULKAN_DIR, LINUX_DIR / "src",
-            *hud_configure_inputs()]
+    return [Path(__file__), SDL_ANDROID_MOUSE_PATCH, PORT_DIR / "guest", PORT_DIR / "host", VULKAN_DIR,
+            LINUX_DIR / "src", *hud_configure_inputs()]
 
 
 def generate_android_build(n: Writer, sln: Any) -> None:
@@ -853,6 +864,7 @@ def generate_android_build(n: Writer, sln: Any) -> None:
         description="ANDROID GRADLE $out",
         pool="console",
     )
-    n.build(outputs=apk, rule="android_gradle", inputs=android_inputs, implicit=[stamp])
+    sdl_mouse_listener = SDL_DIR / "android-project/app/src/main/java/org/libsdl/app/SDLControllerManager.java"
+    n.build(outputs=apk, rule="android_gradle", inputs=android_inputs, implicit=[stamp, sdl_mouse_listener])
     n.build(outputs="android_apk", rule="phony", inputs=apk)
     n.newline()
